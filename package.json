@@ -1,0 +1,12 @@
+{
+    "dependencies": {
+        "babel-core": "^6.26.0",
+        "body-parser": "^1.18.2",
+        "express": "^4.16.2",
+        "urlencode": "^1.1.0"
+    },
+    "devDependencies": {
+        "babel-plugin-transform-object-rest-spread": "^6.26.0",
+        "nodemon": "^1.17.1"
+    }
+}
