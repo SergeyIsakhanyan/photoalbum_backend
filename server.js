@@ -33,9 +33,7 @@ let posts = [
     }
 ]
 
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.get('/api', (req, res) => {
@@ -46,7 +44,7 @@ app.get('/api', (req, res) => {
 app.post('/api/post', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
     posts.push(req.body)
-    res.send(req.body)
+    res.json(posts)
 })
 
 app.post(`/api/posts/:post_${posts.id}`, (req, res) => {
@@ -56,8 +54,7 @@ app.post(`/api/posts/:post_${posts.id}`, (req, res) => {
         }
         return post
     })
-    console.log(posts)
-    res.send(posts)
+    res.json(posts)
 })
 
 app.delete('/api/posts/:post_id', (req, res) => {
@@ -66,6 +63,5 @@ app.delete('/api/posts/:post_id', (req, res) => {
     posts = postsCopy
     res.json(posts)
 });
-
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
