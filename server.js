@@ -52,80 +52,46 @@ const authCheck = jwt({
 
 
 
-app.get('/api', authCheck, (req, res) => {
-    knex(postsTableName).select('*').then((response => res.json(response)))
+app.get('/api/posts',  (req, res, next) => {
+    knex(postsTableName).select('*')
+        .then((response => res.json(response)))
+        .catch(err => next(err))
 })
 
-app.post('/api/post', (req, res) => {
+app.post('/api/post', (req, res, next) => {
     knex(postsTableName).insert(req.body, 'id')
-        .then(
-            function (result, err) {
-                if (err) console.log("Something wrong");
-                knex(postsTableName).where('id', result).select('*')
-                    .then(response => res.json(response[0]))
-            }
-        );
+        .then(ids => knex(postsTableName).where('id', ids).select('*'))
+        .then(response => res.json(response[0]))
+        .catch(err => next(err))
 })
 
-app.post(`/api/posts/:post_id`, (req, res) => {
-    let sql = `UPDATE posts SET title = '${req.body.title}', description = '${req.body.description}', updated = '${req.body.updated}' WHERE id = ${req.body.id}`;
-    connection.query(sql, function (err, result) {
-        if (err) console.log("Something wrong");
-        console.log("1 post updated");
-        knex(postsTableName).where('id', req.body.id).select('*')
-            .then(response => res.json(response[0]))
-    })
+app.post(`/api/posts/:post_id`, (req, res, next) => {
+    knex(postsTableName).where('id', req.body.id)
+        .update({
+            title: req.body.title,
+            description: req.body.description
+        })
+        .then(ids => knex(postsTableName).where('id', req.body.id).select('*'))
+        .then(response => res.json(response[0]))
+        .catch(err => next(err))
 })
 
-app.delete('/api/posts/:post_id', (req, res) => {
-    let sql = `DELETE FROM posts WHERE id = ${req.body.id}`;
-    connection.query(sql, function (err) {
-        if (err) console.log("Something wrong");
-        console.log("1 post deleted");
-        knex(postsTableName).select('*')
-            .then(response => res.json(response))
-    })
-});
-
+app.delete('/api/posts/:post_id', (req, res, next) => {
+    knex(postsTableName).where('id', req.body.id).del()
+        .then(() => knex(postsTableName).select('*'))
+        .then(response => res.json(response))
+        .catch(err => next(err))
+})
 
 app.get('/api/myposts', authCheck, (req, res) => {
-    knex('myposts').select('*').then((response => res.json(response)))
+    knex(postsTableName).select('*')
+        .then((response => res.json(response)))
+        .catch(err => next(err))
 })
 
-app.post('/api/mypost', (req, res) => {
-    knex('myposts').insert(req.body, 'id')
-        .then(
-            function (result, err) {
-                if (err) console.log("Something wrong!");
-                knex('myposts').where('id', result).select('*')
-                    .then(response => res.json(response[0]))
-            }
-        );
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(500).send('Something broke!' + err)
 })
-
-app.post(`/api/myposts/:post_id`, (req, res) => {
-    let sql = `UPDATE myposts SET title = '${req.body.title}', description = '${req.body.description}', updated = '${req.body.updated}' WHERE id = ${req.body.id}`;
-    connection.query(sql, function (err) {
-        if (err) console.log("Something wrong");
-        console.log('err'+err);
-        console.log("1 post updated");
-        knex('myposts').where('id', req.body.id).select('*')
-            .then(response => res.json(response[0]))
-    })
-})
-
-app.delete('/api/myposts/:post_id', (req, res) => {
-    let sql = `DELETE FROM myposts WHERE id = ${req.body.id}`;
-    connection.query(sql, function (err) {
-        if (err) console.log(err);
-        console.log("1 post deleted");
-        knex('myposts').select('*')
-            .then(response => res.json(response))
-    })
-});
-
-
-
-
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
