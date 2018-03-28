@@ -1,12 +1,12 @@
 const express = require('express')
-const bodyParser = require('body-parser');
-const jwt = require('express-jwt');
-const jwks = require('jwks-rsa');
+const bodyParser = require('body-parser')
+const jwt = require('express-jwt')
+const jwks = require('jwks-rsa')
 const cors = require('cors')
 const app = express()
 const router = express.Router()
 const port = 8081
-let mysql = require('mysql');
+const mysql = require('mysql')
 let knex = require('knex')({
     client: 'mysql',
     connection: {
@@ -15,26 +15,19 @@ let knex = require('knex')({
         password: '12345',
         database: 'instagram'
     }
-});
-let connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '12345',
-    database: 'instagram'
-});
-
+})
 
 const postsTableName = 'posts'
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(cors());
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json())
+app.use(cors())
 
 app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Z-Key');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization');
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Z-Key')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization')
     next()
 })
 
@@ -52,21 +45,22 @@ const authCheck = jwt({
 
 
 
-app.get('/api/posts',  (req, res, next) => {
+app.get('/api/posts', (req, res, next) => {
     knex(postsTableName).select('*')
         .then((response => res.json(response)))
         .catch(err => next(err))
 })
 
-app.post('/api/post', (req, res, next) => {
-    knex(postsTableName).insert(req.body, 'id')
+app.post('/api/post', authCheck, (req, res, next) => {
+    let post = Object.assign(req.body, { 'user_id': req.user.sub })
+    knex(postsTableName).insert(post, 'id')
         .then(ids => knex(postsTableName).where('id', ids).select('*'))
         .then(response => res.json(response[0]))
         .catch(err => next(err))
 })
 
-app.post(`/api/posts/:post_id`, (req, res, next) => {
-    knex(postsTableName).where('id', req.body.id)
+app.post(`/api/posts/:post_id`, authCheck, (req, res, next) => {
+    knex(postsTableName).where('id', req.body.id).andWhere('user_id', req.user.sub)
         .update({
             title: req.body.title,
             description: req.body.description
@@ -76,15 +70,15 @@ app.post(`/api/posts/:post_id`, (req, res, next) => {
         .catch(err => next(err))
 })
 
-app.delete('/api/posts/:post_id', (req, res, next) => {
-    knex(postsTableName).where('id', req.body.id).del()
+app.delete('/api/posts/:post_id', authCheck, (req, res, next) => {
+    knex(postsTableName).where('id', req.body.id).andWhere('user_id', req.user.sub).del()
         .then(() => knex(postsTableName).select('*'))
         .then(response => res.json(response))
         .catch(err => next(err))
 })
 
 app.get('/api/myposts', authCheck, (req, res) => {
-    knex(postsTableName).select('*')
+    knex(postsTableName).where('user_id', req.user.sub).select('*')
         .then((response => res.json(response)))
         .catch(err => next(err))
 })
