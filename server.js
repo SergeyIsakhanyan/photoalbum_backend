@@ -14,7 +14,7 @@ let knex = require('knex')({
     }
 })
 
-const postsTableName = 'posts'
+const tableName = 'posts'
 
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
@@ -24,7 +24,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Z-Key')
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization')
+    res.setHeader('User-Id', '')
     next()
 })
 
@@ -45,45 +45,15 @@ function authCheck(req, res, next) {
         })
 }
 
-app.get('/api/posts', authCheck, (req, res, next) => {
-    knex(postsTableName).select('*')
-        .then((response => res.json(response)))
-        .catch(err => next(err))
-})
-
-app.post('/api/posts', authCheck, (req, res, next) => {
-    let post = Object.assign(req.body, { 'user_id': req.user.sub })
-    knex(postsTableName).insert(post, 'id')
-        .then(ids => knex(postsTableName).where('id', ids).select('*'))
-        .then(response => res.json(response[0]))
-        .catch(err => next(err))
-})
-
-app.post(`/api/posts/:post_id`, authCheck, (req, res, next) => {
-    knex(postsTableName).where('id', req.body.id).andWhere('user_id', req.user.sub)
-        .update({
-            title: req.body.title,
-            description: req.body.description
-        })
-        .then(ids => knex(postsTableName).where('id', req.body.id).select('*'))
-        .then(response => res.json(response[0]))
-        .catch(err => next(err))
-})
-
-app.delete('/api/posts/:post_id', authCheck, (req, res, next) => {
-    knex(postsTableName).where('id', req.body.id).andWhere('user_id', req.user.sub).del()
-        .then(() => knex(postsTableName).select('*'))
-        .then(response => res.json(response))
-        .catch(err => next(err))
-})
-
-app.get('/api/myposts', authCheck, (req, res) => {
-    knex(postsTableName).where('user_id', req.user.sub).select('*')
-        .then((response => res.json(response)))
-        .catch(err => next(err))
-})
-
+app.use('/api/posts', authCheck, require('./posts'))
 app.use('/api/users', require('./users'))
+
+app.get('/api/allposts', (req, res) => {
+    knex(tableName).select('*')
+        .then((response => res.json(response)))
+        .catch(err => next(err))
+})
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack)
