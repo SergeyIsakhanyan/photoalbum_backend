@@ -1,12 +1,9 @@
 const express = require('express')
 const bodyParser = require('body-parser')
-const jwt = require('express-jwt')
-const jwks = require('jwks-rsa')
 const cors = require('cors')
 const app = express()
 const router = express.Router()
 const port = 8081
-const mysql = require('mysql')
 let knex = require('knex')({
     client: 'mysql',
     connection: {
@@ -31,27 +28,30 @@ app.use((req, res, next) => {
     next()
 })
 
-const authCheck = jwt({
-    secret: jwks.expressJwtSecret({
-        cache: true,
-        rateLimit: true,
-        jwksRequestsPerMinute: 5,
-        jwksUri: "https://isakhanyan.auth0.com/.well-known/jwks.json"
-    }),
-    audience: 'https://photoalbum.com',
-    issuer: "https://isakhanyan.auth0.com/",
-    algorithms: ['RS256']
-});
+function authCheck(req, res, next) {
+    const userId = req.get('User-Id')
+    if (!userId) {
+        next(new Error('no userId!'))
+    }
+    knex('users')
+        .where('id', userId)
+        .then(([ user ]) => {
+            if (user) {
+                req.user = user
+                next()
+            } else {
+                next(new Error('no such user!'))
+            }
+        })
+}
 
-
-
-app.get('/api/posts', (req, res, next) => {
+app.get('/api/posts', authCheck, (req, res, next) => {
     knex(postsTableName).select('*')
         .then((response => res.json(response)))
         .catch(err => next(err))
 })
 
-app.post('/api/post', authCheck, (req, res, next) => {
+app.post('/api/posts', authCheck, (req, res, next) => {
     let post = Object.assign(req.body, { 'user_id': req.user.sub })
     knex(postsTableName).insert(post, 'id')
         .then(ids => knex(postsTableName).where('id', ids).select('*'))
@@ -82,6 +82,8 @@ app.get('/api/myposts', authCheck, (req, res) => {
         .then((response => res.json(response)))
         .catch(err => next(err))
 })
+
+app.use('/api/users', require('./users'))
 
 app.use((err, req, res, next) => {
     console.error(err.stack)
