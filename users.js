@@ -14,10 +14,10 @@ let knex = require('knex')({
 
 const tableName = 'users'
 
-router.get('/:id', (req, res, next) => {
+router.get('/:login', (req, res, next) => {
     knex(tableName)
         .select('*')
-        .where('id', req.params.id)
+        .where('login', req.params.login)
         .then(([user]) => {
             if (user) {
                 res.json(user)

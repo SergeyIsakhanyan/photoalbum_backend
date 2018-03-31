@@ -23,7 +23,7 @@ router.get('', (req, res, next) => {
 })
 
 router.post('', (req, res, next) => {
-    let post = Object.assign({}, req.body, {'user_id': req.user.id,'username': req.user.name})
+    let post = Object.assign({}, req.body, {'user_id': req.user.id})
     knex(tableName)
         .insert(post)
         .then(ids => knex(tableName)
