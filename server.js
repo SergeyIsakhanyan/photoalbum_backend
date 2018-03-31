@@ -34,7 +34,7 @@ function authCheck(req, res, next) {
         next(new Error('no userId!'))
     }
     knex('users')
-        .where('id', userId)
+        .where('user_id', userId)
         .then(([ user ]) => {
             if (user) {
                 req.user = user
