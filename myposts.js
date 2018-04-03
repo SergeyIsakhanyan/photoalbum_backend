@@ -16,11 +16,9 @@ const tableName = 'posts'
 
 router.get('', (req, res, next) => {
     knex(tableName)
-        .whereExists(function () {
-            this.select('*')
-                .from(tableName)
-                .whereRaw('user_id', req.user.id)
-        })
+        .join('users',`${tableName}.user_id`, '=', 'users.user_id' )
+        .where(`${tableName}.user_id`, req.user.user_id)
+        .select(`${tableName}.*`, 'users.name')
         .then(resp => res.json(resp))
         .catch(err => next(err))
 })
@@ -32,6 +30,7 @@ router.post('', (req, res, next) => {
         .then(ids => knex(tableName)
             .join('users', `${tableName}.user_id`, '=', 'users.user_id')
             .where('post_id', ids[0])
+            .select(`${tableName}.*`, 'users.user_id', 'users.name')
             .then(resp => res.json(resp[0]))
             .catch(err => next(err))
         )
@@ -43,7 +42,8 @@ router.post('/post_id', (req, res, next) => {
         .where('post_id', req.body.post_id)
         .update({
             title: req.body.title,
-            description: req.body.description
+            description: req.body.description,
+            updated: req.body.updated
         })
         .then(ids => knex(tableName)
             .where('post_id', req.body.post_id).select('*'))

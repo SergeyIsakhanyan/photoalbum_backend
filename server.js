@@ -24,7 +24,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Z-Key')
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', 'User-Id')
+    res.setHeader('Access-Control-Allow-Headers', 'User-Id, Post_id')
     next()
 })
 
@@ -35,7 +35,7 @@ function authCheck(req, res, next) {
     }
     knex('users')
         .where('user_id', userId)
-        .then(([ user ]) => {
+        .then(([user]) => {
             if (user) {
                 req.user = user
                 next()
@@ -45,12 +45,24 @@ function authCheck(req, res, next) {
         })
 }
 
-app.use('/api/posts', authCheck, require('./posts'))
+app.use('/api/myposts', authCheck, require('./myposts'))
 app.use('/api/users', require('./users'))
+app.use('/api/comments', authCheck, require('./comments'))
 
-app.get('/api/allposts', (req, res) => {
-    knex(tableName).select('*')
+app.get('/api/posts', (req, res, next) => {
+    knex(tableName)
+        .join('users', `${tableName}.user_id`, '=', 'users.user_id')
+        .select('posts.*', 'users.user_id', 'users.name')
         .then((response => res.json(response)))
+        .catch(err => next(err))
+})
+app.get('/api/comments', (req, res, next) => {
+    const postId = req.get('Post_id')
+    knex('comments')
+        .where('post_id', postId)
+        .join('users', 'comments.user_id', '=', 'users.user_id')
+        .select('text', 'comment_id', 'name', 'post_id')
+        .then(resp => res.json(resp))
         .catch(err => next(err))
 })
 
