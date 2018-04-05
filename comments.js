@@ -28,23 +28,30 @@ router.put('', (req, res, next) => {
         .catch(err => next(err))
 })
 
-// router.post('', (req, res, next) => {
-//     knex(tableName)
-//         .where(req.comment_id, req.body.comment_id)
-//         .update({
-//             text: req.body.text
-//         })
-//         .then(ids => knex(tableName)
-//             .where('post_id', req.body.post_id).select('*'))
-//         .then(resp => res.json(resp[0]))
-//         .catch(err => next(err))
-// })
-
-router.delete('/comment_id', (req, res, next) => {
+router.post('/comment_id', (req, res, next) => {
     knex(tableName)
         .where('comment_id', req.body.comment_id)
+        .andWhere('user_id', req.user.user_id)
+        .update({
+            text: req.body.text
+        })
+        .then(() => knex(tableName)
+            .where('comment_id', req.body.comment_id)
+            .select('*')
+            .then(resp => res.json(resp[0]))
+            .catch(err => next(err))
+        )
+        .catch(err => next(err))
+})
+
+router.delete('/comment_id', (req, res, next) => {
+    const postId = req.get('Post_id')
+    knex(tableName)
+        .where('comment_id', req.body.comment_id)
+        .andWhere('user_id', req.user.user_id)
         .del()
         .then(() => knex(tableName)
+            .where('post_id', postId)
             .select('*')
             .then(resp => res.json(resp))
             .catch(err => next(err))

@@ -61,7 +61,7 @@ app.get('/api/comments', (req, res, next) => {
     knex('comments')
         .where('post_id', postId)
         .join('users', 'comments.user_id', '=', 'users.user_id')
-        .select('text', 'comment_id', 'name', 'post_id')
+        .select('text', 'comment_id', 'name', 'post_id', 'users.user_id')
         .then(resp => res.json(resp))
         .catch(err => next(err))
 })
