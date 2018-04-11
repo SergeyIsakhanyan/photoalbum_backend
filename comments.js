@@ -29,6 +29,7 @@ router.put('', (req, res, next) => {
 })
 
 router.post('/comment_id', (req, res, next) => {
+    const postId = req.get('Post_id')
     knex(tableName)
         .where('comment_id', req.body.comment_id)
         .andWhere('user_id', req.user.user_id)
@@ -36,9 +37,10 @@ router.post('/comment_id', (req, res, next) => {
             text: req.body.text
         })
         .then(() => knex(tableName)
-            .where('comment_id', req.body.comment_id)
-            .select('*')
-            .then(resp => res.json(resp[0]))
+            .join('users', `${tableName}.user_id`, '=', 'users.user_id')
+            .where('post_id', postId)
+            .select(`${tableName}.*`, 'users.user_id', 'users.name')
+            .then(resp => res.json(resp))
             .catch(err => next(err))
         )
         .catch(err => next(err))
@@ -51,6 +53,7 @@ router.delete('/comment_id', (req, res, next) => {
         .andWhere('user_id', req.user.user_id)
         .del()
         .then(() => knex(tableName)
+            .join('users', `${tableName}.user_id`, '=', 'users.user_id')
             .where('post_id', postId)
             .select('*')
             .then(resp => res.json(resp))

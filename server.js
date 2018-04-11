@@ -47,7 +47,8 @@ function authCheck(req, res, next) {
 
 app.use('/api/myposts', authCheck, require('./myposts'))
 app.use('/api/users', require('./users'))
-app.use('/api/comments', authCheck, require('./comments'))
+app.use('/api/comments/comment', authCheck, require('./comments'))
+app.use('/api/like', authCheck, require('./likes'))
 
 app.get('/api/posts', (req, res, next) => {
     knex(tableName)
@@ -68,7 +69,7 @@ app.get('/api/comments', (req, res, next) => {
 
 
 app.use((err, req, res, next) => {
-    console.error(err.stack)
+    console.error(err)
     res.status(500).send('Something broke!' + err)
 })
 
